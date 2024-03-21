@@ -1,0 +1,145 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MODERATOR
+  PARTICIPANT
+  VIEWER
+}
+
+model User {
+  id       String   @id @default(uuid())
+  nickname String   @unique
+  name     String
+  email    String   @unique
+  password String
+  role     UserRole
+
+  fundraisings UserFundraising[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Participant {
+  id              String  @id @default(uuid())
+  name            String
+  email           String
+  socialMedia     Json
+  goal            Float
+  fundraisingName String
+  phone           String
+  photos          Json
+  planningRaffles Boolean
+  collectedTotal  Float
+
+  jars Jar[]
+
+  fundraisingId String
+  fundraising   Fundraising @relation(fields: [fundraisingId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserFundraising {
+  userId        String
+  fundraisingId String
+
+  user        User        @relation(fields: [userId], references: [id])
+  fundraising Fundraising @relation(fields: [fundraisingId], references: [id])
+
+  @@id([userId, fundraisingId])
+}
+
+model Fundraising {
+  id            String @id @default(uuid())
+  name          String
+  description   String
+  beneficiaries Json[]
+  goal          Float
+  photos        Json[]
+  resultPdf     Json[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  moderators   UserFundraising[]
+  participants Participant[]
+  goods        Goods[]
+}
+
+model Goods {
+  id          String @id @default(uuid())
+  name        String
+  description String
+  quantity    Int
+  price       Float
+  beneficiare String
+  buyLinks    Json[]
+  photos      Json[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  comments      Comment[]
+  receipts      Receipt[]
+  fundRaisingId String      @unique
+  fundRaising   Fundraising @relation(fields: [fundRaisingId], references: [id])
+}
+
+model Receipt {
+  id            String @id @default(uuid())
+  purchaseLinks Json[]
+  photos        Json[]
+  pdf           Json[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  goodsId String
+  goods   Goods  @relation(fields: [goodsId], references: [id])
+}
+
+model Jar {
+  id              String  @id @default(uuid())
+  monoJarId       String  @unique
+  monoLongJarId   String  @unique
+  monoAmount      Float
+  monoGoal        Float
+  monoOwnerIcon   String
+  monoTitle       String
+  monoOwnerName   String
+  monoCurrency    Int
+  monoDescription String
+  monoBlago       Boolean
+  monoClosed      Boolean
+  type            JarType
+  fundraisingId   String
+
+  participantId String      @unique
+  participant   Participant @relation(fields: [participantId], references: [id])
+}
+
+enum JarType {
+  MAIN
+  SECONDARY
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  text      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  goodsId String @unique
+  goods   Goods  @relation(fields: [goodsId], references: [id])
+}
